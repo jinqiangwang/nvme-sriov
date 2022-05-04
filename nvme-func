@@ -1,0 +1,142 @@
+#!/bin/bash
+
+
+function check_nvme_cli() {
+    nvme_cmd=$1
+
+    nvme_ver_str=`${nvme_cmd} --version | cut -d" " -f 3`
+    nvme_ver=(`echo ${nvme_ver_str} | sed "s/\./ /g"`)
+
+    msg="nvme version need to be 1.12 or newer. current version is ${nvme_ver_str}"
+
+    if [ ${#nvme_ver[@]} -lt 2 ]; then echo ${msg}; return 1; fi
+    if [ ${nvme_ver[0]} -lt 1 ]; then echo ${msg}; return 1; fi
+    if [ ${nvme_ver[1]} -lt 12 ]; then echo ${msg}; return 1; fi
+
+    echo "nvme-cli version ${nvme_ver_str} has SR-IOV support"
+}
+
+function check_nvme_vu() {
+    nvme_vu=$1
+
+    nvme_ver_str=`${nvme_vu} --version | cut -d" " -f 3`
+    nvme_ver=(`echo ${nvme_ver_str} | sed "s/\./ /g"`)
+
+    msg="nvme version need to be 1.12 or newer. current version is ${nvme_ver_str}"
+
+    if [ ${#nvme_ver[@]} -lt 2 ]; then echo ${msg}; return 1; fi
+    if [ "${nvme_ver[0]}" != "FF002100" ]; then echo ${msg}; return 1; fi
+
+    echo "nvme-cli version ${nvme_ver_str} has SR-IOV support"
+}
+
+function attach_all_ns() {
+    nvme_dev=$1
+
+    ns_list=(`${nvme_cmd} list-ns /dev/${nvme_dev} -a | cut -d: -f2`)
+    if [ ${#ns_list[@]} -eq 0 ]
+    then
+        echo "no ns detected"
+        exit
+    else
+        echo "${#ns_list[@]} ns(es) detected"
+    fi
+
+    for ns in ${ns_list[@]}
+    do
+        ${nvme_cmd} attach-ns /dev/${nvme_dev} -c ${ns} -n ${ns}
+    done
+}
+
+function config_all_vf() {
+    nvme_dev=$1
+    active_vf_cnt=$2
+    max_res_cnt=$((${total_qpairs}/(${max_vf_cnt}+1)))
+
+    for((i=1; i<=${active_vf_cnt};i++))
+    do
+        ${nvme_cmd} virt-mgmt /dev/${nvme_dev} -c $i -a 7
+        ${nvme_cmd} virt-mgmt /dev/${nvme_dev} -c $i -r 0 -n ${max_res_cnt} -a 8
+        ${nvme_cmd} virt-mgmt /dev/${nvme_dev} -c $i -r 1 -n ${max_res_cnt} -a 8
+        ${nvme_cmd} virt-mgmt /dev/${nvme_dev} -c $i -a 9
+    done
+}
+
+function create_all_ns() {
+    nvme_dev=$1
+    ns_cnt=$2
+
+    echo "drive_cap_gb: ${drive_cap}; ns_granularity: ${ns_granularity}; ns_base_cap: ${ns_base_cap}"
+
+    for((i=0;i<${ns_cnt};i++))
+    do
+        echo "${nvme_cmd} create-ns /dev/${nvme_dev} -s ${base_cap_lba} -c ${base_cap_lba} -f 0"
+        ${nvme_cmd} create-ns /dev/${nvme_dev} -s ${base_cap_lba} -c ${base_cap_lba} -f 0
+        # the last NS creation may fail, due to insufficient space
+        # query remaining space using id-ctrl and try again
+        if [ $? -ne 0 ] 
+        then
+            ns_cap=$((`${nvme_cmd} id-ctrl /dev/${nvme_dev} -H | grep unvmcap | cut -d: -f2`/512))
+            ${nvme_cmd} create-ns /dev/${nvme_dev} -s ${ns_cap} -c ${ns_cap} -f 0
+            break
+        fi 
+    done
+}
+
+function delete_all_ns() {
+    nvme_dev=$1
+
+    ns_list=(`${nvme_cmd} list-ns /dev/${nvme_dev} -a | cut -d: -f2`)
+
+    if [ ${#ns_list[@]} -eq 0 ]
+    then
+        echo "no ns detected"
+        return
+    else
+        echo "${#ns_list[@]} ns(es) detected"
+    fi
+
+    for ns in ${ns_list[@]}
+    do
+        ${nvme_cmd} delete-ns /dev/${nvme_dev} -n ${ns}
+    done
+
+}
+
+function detach_all_ns() {
+    nvme_dev=$1
+    ns_list=(`${nvme_cmd} list-ns /dev/${nvme_dev} -a | cut -d: -f2`)
+
+    if [ ${#ns_list[@]} -eq 0 ]
+    then
+        echo "no ns detected"
+        return
+    else
+        echo "${#ns_list[@]} ns(es) detected"
+    fi
+
+    for ns in ${ns_list[@]}
+    do
+        ctrl=`${nvme_cmd} list-ctrl /dev/${nvme_dev} -n ${ns} | cut -d: -f 2`
+        if [ "${ctrl}" != "" ]
+        then
+            ${nvme_cmd} detach-ns /dev/${nvme_dev} -c ${ctrl} -n ${ns}
+        fi
+    done
+}
+
+function offline_all_vf() {
+    nvme_dev=$1
+    online_ctrls=($(${nvme_cmd} list-secondary /dev/${nvme_dev} | grep Online -B 2 | grep "Secondary Controller Identifier" | cut -d: -f 3))
+    for ctrl in ${online_ctrls[@]} 
+    do
+        ${nvme_cmd} virt-mgmt /dev/${nvme_dev} -c ${ctrl} -a 7
+    done
+}
+
+function switch_vf() {
+    nvme_dev=$1
+    value=$2
+
+    echo ${value} > /sys/class/nvme/${nvme_dev}/device/sriov_numvfs
+}
