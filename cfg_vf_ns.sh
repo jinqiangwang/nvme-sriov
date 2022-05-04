@@ -26,8 +26,7 @@ then
     exit
 fi
 
-source nvme-sriov.cfg 
-source nvme-func
+source sriov-helper 
 
 # check_nvme_cli ${nvme_cmd}
 # if [ $? -ne 0 ]; then exit 1; fi

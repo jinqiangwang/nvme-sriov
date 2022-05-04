@@ -26,8 +26,7 @@ then
     exit
 fi
 
-source nvme-sriov.cfg
-source nvme-func
+source sriov-helper 
 
 echo "dev: ${nvme_dev}; drive_cap_gb: ${drive_cap_gb}; hw_max_vf_cnt: ${hw_max_vf_cnt}; max_vf_cnt: ${max_vf_cnt}"
 
