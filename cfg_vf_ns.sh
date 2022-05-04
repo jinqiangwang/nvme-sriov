@@ -69,4 +69,4 @@ attach_all_ns ${nvme_dev}
 # enable all VFs
 switch_vf ${nvme_dev} ${ns_cnt}
 
-watch -n 3 nvme list
+watch -n 3 -x "${nvme_cmd} list | sort -V"
