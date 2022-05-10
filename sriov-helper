@@ -82,12 +82,15 @@ function create_all_ns() {
     nvme_dev=$1
     ns_cnt=$2
 
-    echo "drive_cap_gb: ${drive_cap}; ns_granularity: ${ns_granularity}; ns_base_cap: ${ns_base_cap}"
+    echo "drive_cap_gb: ${drive_cap_gb}; ns_granularity: ${ns_granularity_lba}; hw_base_cap_lba: ${hw_base_cap_lba}; ns_base_cap: ${base_cap_lba}"
 
     for((i=0;i<${ns_cnt};i++))
     do
-        echo "${nvme_cmd} create-ns /dev/${nvme_dev} -s ${base_cap_lba} -c ${base_cap_lba} -f 0"
-        ${nvme_cmd} create-ns /dev/${nvme_dev} -s ${base_cap_lba} -c ${base_cap_lba} -f 0
+        cap_multiplier=$((32/${ns_cnt}))
+        echo "cap_multiplier: ${cap_multiplier}"
+        ns_cap=$((${cap_multiplier}*${hw_base_cap_lba}))
+        echo "${nvme_cmd} create-ns /dev/${nvme_dev} -s ${ns_cap} -c ${ns_cap} -f 0"
+        ${nvme_cmd} create-ns /dev/${nvme_dev} -s ${ns_cap} -c ${ns_cap} -f 0
         # the last NS creation may fail, due to insufficient space
         # query remaining space using id-ctrl and try again
         if [ $? -ne 0 ] 

@@ -39,9 +39,9 @@ fi
 
 echo "dev: ${nvme_dev}; capacity: ${drive_cap}; hw_max_vf_cnt: ${hw_max_vf_cnt}; max_vf_cnt: ${max_vf_cnt}"
 
-if [[ -z "${ns_cnt}" ]] || [[ $((${ns_cnt})) -le 0 ]] || [[ ${ns_cnt} -gt ${max_vf_cnt} ]]
+if [[ -z "${ns_cnt}" ]] || [[ $((${ns_cnt})) -lt 0 ]] || [[ ${ns_cnt} -gt ${max_vf_cnt} ]]
 then
-    echo -e "incorrect ns count, ns need to be in [1, 32]. \n${example_str}"
+    echo -e "incorrect ns count, ns need to be in [0, 32]. \n${example_str}"
     exit
 fi
 
