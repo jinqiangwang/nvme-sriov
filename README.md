@@ -2,6 +2,12 @@
 
 This project is to provide a set of scripts for NVMe SR-IOS related test.
 
+nvme-cli binary path is defined in sriov-helper. Please use version nvme version 1.12 and later
+(avoid 1.14 please) for test.
+export nvme_cmd=/usr/sbin/nvme
+export nvme_vu=/usr/sbin/nvme.vu
+
+
 1. cfg_vf_ns.sh can be used to create NS, configure VQ/VI for VF, bring VF online, attach 
    NS to VF, and make VF visible to system. This script will retrieve nvme drive capacity 
    from fied "tnvmcap" from "nvme id-ctrl" output, and create namespace based on the value 
