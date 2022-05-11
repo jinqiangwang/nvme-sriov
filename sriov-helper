@@ -7,6 +7,7 @@ export total_qpairs=132
 if [ ! -e "${nvme_cmd}" ]
 then
     echo "${nvme_cmd} does not exist!!! before using these scripts please specify the correct path of ${nvme_cmd} in ${BASH_ARGV}"
+    return
 fi
 
 if [ -z "${nvme_dev}" ]
