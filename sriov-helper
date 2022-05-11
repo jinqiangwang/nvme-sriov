@@ -1,12 +1,17 @@
 #!/bin/bash
 
-export nvme_cmd=/usr/local/sbin/nvme
-export nvme_vu=/usr/local/sbin/nvme.vu
+export nvme_cmd=/usr/sbin/nvme
+export nvme_vu=/usr/sbin/nvme.vu
 export total_qpairs=132
+
+if [ ! -e "${nvme_cmd}" ]
+then
+    echo "${nvme_cmd} does not exist!!! before using these scripts please specify the correct path of ${nvme_cmd} in ${BASH_ARGV}"
+fi
 
 if [ -z "${nvme_dev}" ]
 then
-    echo "you need to define nvme_dev before using this file: ${BASH_ARGV}"
+    echo "you need to define nvme_dev before sourcing this file: ${BASH_ARGV}"
 else
     # below variables depend on definition of nvme_dev
     export hw_max_vf_cnt=$(cat /sys/class/nvme/${nvme_dev}/device/sriov_totalvfs 2>/dev/null)
