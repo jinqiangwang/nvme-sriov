@@ -1,6 +1,6 @@
 # nvme-sriov
 
-This project is to provide a set of scripts for NVMe SR-IOS related test.
+This project is to provide a set of scripts for NVMe SR-IOV related test.
 
 nvme-cli binary path is defined in sriov-helper. Please use version nvme version 1.12 and later
 (avoid 1.14 please) for test.
