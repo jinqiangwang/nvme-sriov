@@ -92,7 +92,7 @@ function create_all_ns() {
 
     for((i=0;i<${ns_cnt};i++))
     do
-        cap_multiplier=$((32/${ns_cnt}))
+        cap_multiplier=$((${max_vf_cnt}/${ns_cnt}))
         echo "cap_multiplier: ${cap_multiplier}"
         ns_cap=$((${cap_multiplier}*${hw_base_cap_lba}))
         echo "${nvme_cmd} create-ns /dev/${nvme_dev} -s ${ns_cap} -c ${ns_cap} -f 0"
